@@ -15,6 +15,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.rag.loaders.file_loader import FILE_LOADER_MAPPING
 from app.core.dependencies import (
     get_current_user,
     get_database,
@@ -155,6 +156,23 @@ async def upload_documents(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid filename.",
                 )
+
+            extension = Path(
+                             original_filename
+                            ).suffix.lower()
+
+            if extension not in FILE_LOADER_MAPPING:
+                supported_types = ", ".join(
+                   FILE_LOADER_MAPPING.keys()
+                )
+
+                raise HTTPException(
+                   status_code=status.HTTP_400_BAD_REQUEST,
+                   detail=(
+                       f"Unsupported file type '{extension}'. "
+                       f"Supported types: {supported_types}"
+                    ),
+       )
 
             # ==================================================
             # Create temporary file
