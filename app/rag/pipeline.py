@@ -130,3 +130,17 @@ class RAGPipeline:
             question=question,
             context=context,
         )
+
+    def delete_document(
+        self,
+        workspace_id: int,
+        document_id: int,
+    ) -> None:
+        """
+        Delete all indexed chunks belonging to a document.
+        """
+
+        self._vector_store.delete_document(
+            workspace_id=workspace_id,
+            document_id=document_id,
+        )

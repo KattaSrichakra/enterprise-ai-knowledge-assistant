@@ -34,12 +34,52 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "/upload",
-    response_model=UploadResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Upload Documents",
+# ==========================================================
+# List Documents
+# ==========================================================
+
+@router.get(
+    "",
+    summary="List Documents",
 )
+def list_documents(
+    workspace_id: int = Query(
+        ...,
+        gt=0,
+        description="Workspace whose documents should be listed.",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """
+    Return all documents belonging to the selected workspace.
+    """
+
+    workspace = WorkspaceService.get_workspace(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+    )
+
+    if workspace is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
+
+    documents = DocumentService.get_workspace_documents(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+    )
+
+    return documents
+
+
+# ==========================================================
+# Upload Documents
+# ==========================================================
+
 @router.post(
     "/upload",
     response_model=UploadResponse,
@@ -94,7 +134,6 @@ async def upload_documents(
     chunks_indexed = 0
 
     try:
-
         for upload in files:
 
             # ==================================================
@@ -211,16 +250,18 @@ async def upload_documents(
                 # Create document version
                 # ==================================================
 
-                latest_version = DocumentService.get_document_versions(
-                    db=db,
-                    user_id=current_user.id,
-                    workspace_id=workspace_id,
-                    document_id=document.id,
+                latest_versions = (
+                    DocumentService.get_document_versions(
+                        db=db,
+                        user_id=current_user.id,
+                        workspace_id=workspace_id,
+                        document_id=document.id,
+                    )
                 )
 
                 latest_version_before_upload = (
-                    latest_version[0]
-                    if latest_version
+                    latest_versions[0]
+                    if latest_versions
                     else None
                 )
 
@@ -326,6 +367,18 @@ async def upload_documents(
 
             if temporary_path.exists():
                 temporary_path.unlink()
+
+
+# ==========================================================
+# Upload URL
+# ==========================================================
+
+@router.post(
+    "/url",
+    response_model=UploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Upload URL",
+)
 def upload_url(
     request: URLRequest,
     workspace_id: int = Query(
@@ -440,3 +493,252 @@ def upload_url(
         documents_indexed=1,
         chunks_indexed=chunks_indexed,
     )
+
+
+# ==========================================================
+# Get Document Versions
+# ==========================================================
+
+@router.get(
+    "/{document_id}/versions",
+    summary="Get Document Versions",
+)
+def get_document_versions(
+    document_id: int,
+    workspace_id: int = Query(
+        ...,
+        gt=0,
+        description="Workspace containing the document.",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """
+    Return all versions of a specific document.
+    """
+
+    workspace = WorkspaceService.get_workspace(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+    )
+
+    if workspace is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
+
+    try:
+        versions = DocumentService.get_document_versions(
+            db=db,
+            user_id=current_user.id,
+            workspace_id=workspace_id,
+            document_id=document_id,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+    return versions
+
+
+# ==========================================================
+# Get Document Details
+# ==========================================================
+
+@router.get(
+    "/{document_id}",
+    summary="Get Document Details",
+)
+def get_document(
+    document_id: int,
+    workspace_id: int = Query(
+        ...,
+        gt=0,
+        description="Workspace containing the document.",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+):
+    """
+    Return details of a specific document.
+    """
+
+    workspace = WorkspaceService.get_workspace(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+    )
+
+    if workspace is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
+
+    document = DocumentService.get_document(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+        document_id=document_id,
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    return document
+
+
+# ==========================================================
+# Delete Document
+# ==========================================================
+
+@router.delete(
+    "/{document_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete Document",
+)
+def delete_document(
+    document_id: int,
+    workspace_id: int = Query(
+        ...,
+        gt=0,
+        description="Workspace containing the document.",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_database),
+    pipeline: RAGPipeline = Depends(get_pipeline),
+) -> None:
+    """
+    Delete a document and its associated versions,
+    stored files, and vector-store chunks.
+    """
+
+    # ==========================================================
+    # Verify workspace ownership
+    # ==========================================================
+
+    workspace = WorkspaceService.get_workspace(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+    )
+
+    if workspace is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found.",
+        )
+
+    # ==========================================================
+    # Verify document ownership
+    # ==========================================================
+
+    document = DocumentService.get_document(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+        document_id=document_id,
+    )
+
+    if document is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    # ==========================================================
+    # Collect stored files before database deletion
+    # ==========================================================
+
+    versions = DocumentService.get_document_versions(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+        document_id=document_id,
+    )
+
+    storage_paths = [
+        Path(version.storage_path)
+        for version in versions
+        if version.storage_path
+    ]
+
+    # ==========================================================
+    # Delete vector-store chunks first
+    # ==========================================================
+
+    try:
+        pipeline.delete_document(
+            workspace_id=workspace_id,
+            document_id=document_id,
+        )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete document from the vector store.",
+        ) from exc
+
+    # ==========================================================
+    # Delete database records
+    # ==========================================================
+
+    deleted = DocumentService.delete_document(
+        db=db,
+        user_id=current_user.id,
+        workspace_id=workspace_id,
+        document_id=document_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found.",
+        )
+
+    # ==========================================================
+    # Delete physical stored files
+    # ==========================================================
+
+    for storage_path in storage_paths:
+
+        try:
+            if storage_path.exists():
+                storage_path.unlink()
+
+        except Exception:
+            # Database and vector-store deletion have already
+            # succeeded. Do not report the entire request as
+            # failed because of filesystem cleanup.
+            pass
+
+    # ==========================================================
+    # Remove empty document directory when possible
+    # ==========================================================
+
+    document_directory = (
+        settings.DATA_DIR
+        / "documents"
+        / f"workspace_{workspace_id}"
+        / f"document_{document_id}"
+    )
+
+    try:
+        if document_directory.exists():
+            shutil.rmtree(
+                document_directory,
+                ignore_errors=True,
+            )
+
+    except Exception:
+        pass
+
+    return None

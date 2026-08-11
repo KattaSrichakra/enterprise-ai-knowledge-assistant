@@ -71,6 +71,33 @@ class VectorStore:
             search_kwargs=search_kwargs,
         )
 
+    def delete_document(
+        self,
+        workspace_id: int,
+        document_id: int,
+    ) -> None:
+        """ Delete all vector-store chunks belonging to a document.
+        """
+
+        try:
+            self._vector_store.delete(
+                where={
+                    "$and": [
+                        {
+                            "workspace_id": workspace_id,
+                        },
+                        {
+                            "document_id": document_id,
+                        },
+                    ],
+                }
+            )
+
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to delete document from the vector store."
+            ) from e
+
     def delete_collection(self) -> None:
         """
         Delete the complete collection.
