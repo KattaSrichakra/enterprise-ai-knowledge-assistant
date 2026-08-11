@@ -1,7 +1,13 @@
-from langchain_core.embeddings import Embeddings
-from langchain_huggingface import HuggingFaceEmbeddings
+import os
 
 from app.core.config import settings
+
+# Make the Hugging Face token available before importing
+# the Hugging Face integration.
+os.environ.setdefault("HF_TOKEN", settings.HF_TOKEN)
+
+from langchain_core.embeddings import Embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 
 class EmbeddingManager:
@@ -19,6 +25,7 @@ class EmbeddingManager:
             model_name=settings.EMBEDDING_MODEL,
             model_kwargs={
                 "device": settings.EMBEDDING_DEVICE,
+                "token": settings.HF_TOKEN,
             },
             encode_kwargs={
                 "normalize_embeddings": True,

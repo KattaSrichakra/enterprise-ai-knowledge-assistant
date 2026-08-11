@@ -71,6 +71,10 @@ class Settings(BaseSettings):
 
     EMBEDDING_DEVICE: str = "cpu"
 
+    USER_AGENT: str = "EnterpriseAIKnowledgeAssistant/1.0"
+
+    HF_TOKEN: str
+
     # ==========================================================
     # RAG Configuration
     # ==========================================================

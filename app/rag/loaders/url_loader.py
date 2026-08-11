@@ -1,4 +1,9 @@
+import os
 from urllib.parse import urlparse
+
+from app.core.config import settings
+
+os.environ.setdefault("USER_AGENT", settings.USER_AGENT)
 
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
@@ -29,11 +34,7 @@ class URLLoader(BaseLoader):
         try:
             loader = WebBaseLoader(
                 web_paths=[source],
-                header_template={
-                    "User-Agent": (
-                        "EnterpriseAIKnowledgeAssistant/1.0"
-                    )
-                },
+                header_template={"User-Agent": settings.USER_AGENT,},
             )
 
             documents = loader.load()
