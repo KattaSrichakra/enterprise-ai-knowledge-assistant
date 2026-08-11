@@ -19,7 +19,9 @@ class VectorStore:
         self._vector_store = Chroma(
             collection_name=settings.VECTOR_COLLECTION_NAME,
             embedding_function=embedding_manager.get_model(),
-            persist_directory=str(settings.VECTOR_DB_DIR),
+            persist_directory=str(
+                settings.VECTOR_DB_DIR
+            ),
         )
 
     def add_documents(
@@ -30,23 +32,43 @@ class VectorStore:
         Store documents in the vector database.
         """
 
+        if not documents:
+            raise ValueError(
+                "At least one document must be provided."
+            )
+
         try:
-            self._vector_store.add_documents(documents)
+            self._vector_store.add_documents(
+                documents
+            )
 
         except Exception as e:
             raise RuntimeError(
                 "Failed to add documents to the vector store."
             ) from e
 
-    def get_retriever(self) -> BaseRetriever:
+    def get_retriever(
+        self,
+        workspace_id: int | None = None,
+    ) -> BaseRetriever:
         """
         Return a LangChain retriever.
+
+        When workspace_id is provided, retrieval is restricted
+        to chunks belonging to that workspace.
         """
 
-        return self._vector_store.as_retriever(
-            search_kwargs={
-                "k": settings.TOP_K,
+        search_kwargs: dict[str, object] = {
+            "k": settings.TOP_K,
+        }
+
+        if workspace_id is not None:
+            search_kwargs["filter"] = {
+                "workspace_id": workspace_id,
             }
+
+        return self._vector_store.as_retriever(
+            search_kwargs=search_kwargs,
         )
 
     def delete_collection(self) -> None:

@@ -31,6 +31,7 @@ class RAGPipeline:
     def ingest(
         self,
         sources: list[str],
+        metadata: dict[str, object] | None = None,
     ) -> int:
         """
         Load, split and index supported sources.
@@ -38,10 +39,10 @@ class RAGPipeline:
         Args:
             sources:
                 List of supported sources.
-                Each source can be:
-                - File path
-                - URL
-                - Plain text
+
+            metadata:
+                Metadata that should be attached to
+                every generated document chunk.
 
         Returns:
             Number of indexed chunks.
@@ -67,20 +68,37 @@ class RAGPipeline:
                 "No documents were loaded."
             )
 
-        chunks = self._splitter.split(documents)
+        chunks = self._splitter.split(
+            documents
+        )
 
         if not chunks:
             raise ValueError(
                 "No document chunks were created."
             )
 
-        self._vector_store.add_documents(chunks)
+        # ------------------------------------------------------
+        # Attach application-level metadata
+        # ------------------------------------------------------
+
+        if metadata:
+            for chunk in chunks:
+                chunk.metadata.update(metadata)
+
+        # ------------------------------------------------------
+        # Store chunks in vector database
+        # ------------------------------------------------------
+
+        self._vector_store.add_documents(
+            chunks
+        )
 
         return len(chunks)
 
     def query(
-        self,
-        question: str,
+    self,
+    question: str,
+    workspace_id: int | None = None,
     ) -> str:
         """
         Answer a question using the indexed
@@ -93,7 +111,8 @@ class RAGPipeline:
             )
 
         documents = self._retriever.retrieve(
-            question
+             query=question,
+             workspace_id=workspace_id,
         )
 
         if not documents:
