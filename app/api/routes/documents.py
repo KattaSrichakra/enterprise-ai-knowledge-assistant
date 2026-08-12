@@ -502,7 +502,7 @@ def upload_url(
             pass
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to index the web page.",
         ) from exc
 
