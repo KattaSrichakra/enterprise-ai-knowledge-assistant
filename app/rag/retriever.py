@@ -27,10 +27,11 @@ class Retriever:
         self._vector_store = vector_store
 
     def retrieve(
-        self,
-        query: str,
-        workspace_id: int | None = None,
-    ) -> list[Document]:
+    self,
+    query: str,
+    workspace_id: int | None = None,
+    document_id: int | None = None,
+) -> list[Document]:
         """
         Retrieve the most relevant documents for a query.
 
@@ -53,6 +54,7 @@ class Retriever:
         try:
             retriever = self._vector_store.get_retriever(
                 workspace_id=workspace_id,
+                document_id=document_id,
             )
 
             return retriever.invoke(query)

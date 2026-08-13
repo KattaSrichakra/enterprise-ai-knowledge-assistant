@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
-
 class ChatRequest(BaseModel):
     """
     Chat request model.
@@ -15,6 +14,12 @@ class ChatRequest(BaseModel):
         ],
     )
 
+    session_id: int | None = Field(
+        default=None,
+        gt=0,
+        description="Existing chat session ID. "
+        "If omitted, a new session is created.",
+    )
 
 class URLRequest(BaseModel):
     """

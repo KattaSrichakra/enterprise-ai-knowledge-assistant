@@ -1,8 +1,7 @@
 from pathlib import Path
-
+from app.rag.loaders.pdf_loader import PDFLoader
 from langchain_community.document_loaders import (
     CSVLoader,
-    PyPDFLoader,
     TextLoader as LangChainTextLoader,
     UnstructuredPowerPointLoader,
     UnstructuredWordDocumentLoader,
@@ -13,7 +12,6 @@ from app.rag.loaders.base_loader import BaseLoader
 
 
 FILE_LOADER_MAPPING = {
-    ".pdf": PyPDFLoader,
     ".doc": UnstructuredWordDocumentLoader,
     ".docx": UnstructuredWordDocumentLoader,
     ".txt": lambda path: LangChainTextLoader(

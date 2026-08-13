@@ -99,7 +99,9 @@ class RAGPipeline:
     self,
     question: str,
     workspace_id: int | None = None,
-    ) -> str:
+    document_id: int | None = None,
+    history: str = "",
+) -> str:
         """
         Answer a question using the indexed
         knowledge base.
@@ -111,8 +113,9 @@ class RAGPipeline:
             )
 
         documents = self._retriever.retrieve(
-             query=question,
-             workspace_id=workspace_id,
+            query=question,
+            workspace_id=workspace_id,
+            document_id=document_id,
         )
 
         if not documents:
@@ -121,15 +124,48 @@ class RAGPipeline:
                 "information in the knowledge base."
             )
 
-        context = "\n\n".join(
-            document.page_content
-            for document in documents
+        context_parts: list[str] = []
+
+        for document in documents:
+            metadata = document.metadata
+
+            source_type = metadata.get(
+                "source_type",
+                "unknown",
+     )
+
+            document_name = metadata.get(
+                "document_name",
+                "unknown",
+        )
+
+            file_name = metadata.get(
+                "file_name","",)
+
+            source_information = (
+                f"Source type: {source_type}\n"
+                f"Document name: {document_name}"
+       )
+
+            if file_name:
+                source_information += (
+                f"\nFile name: {file_name}"
+           )
+
+            context_parts.append(
+                f"{source_information}\n"
+                f"Content:\n{document.page_content}"
+            )
+
+        context = "\n\n---\n\n".join(
+            context_parts
         )
 
         return self._chain.generate(
-            question=question,
-            context=context,
-        )
+                    question=question,
+                    context=context,
+                    history=history,
+       )
 
     def delete_document(
         self,

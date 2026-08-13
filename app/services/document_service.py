@@ -155,7 +155,43 @@ class DocumentService:
         )
 
         return db.scalar(statement)
-    
+
+    @staticmethod
+    def find_workspace_document(
+        db: Session,
+        user_id: int,
+        workspace_id: int,
+        reference: str,
+    ) -> Document | None:
+        """
+        Find a document by its logical name or original filename
+        within the authenticated user's workspace.
+        """
+
+        normalized_reference = reference.strip()
+
+        if not normalized_reference:
+            return None
+
+        statement = (
+            select(Document)
+            .where(
+                Document.workspace_id == workspace_id,
+                Document.workspace.has(
+                    user_id=user_id,
+                ),
+                (
+                    (Document.name == normalized_reference)
+                    | (
+                        Document.original_filename
+                        == normalized_reference
+                    )
+                ),
+            )
+        )
+
+        return db.scalar(statement)
+
     # ==========================================================
     # Create document
     # ==========================================================

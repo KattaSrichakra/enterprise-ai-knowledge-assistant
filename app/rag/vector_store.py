@@ -48,9 +48,10 @@ class VectorStore:
             ) from e
 
     def get_retriever(
-        self,
-        workspace_id: int | None = None,
-    ) -> BaseRetriever:
+    self,
+    workspace_id: int | None = None,
+    document_id: int | None = None,
+) -> BaseRetriever:
         """
         Return a LangChain retriever.
 
@@ -62,10 +63,26 @@ class VectorStore:
             "k": settings.TOP_K,
         }
 
-        if workspace_id is not None:
+        if workspace_id is not None and document_id is not None:
+            search_kwargs["filter"] = {
+                "$and": [
+                    {
+                        "workspace_id": workspace_id,
+                    },
+                    {
+                        "document_id": document_id,
+                    },
+                ]
+            }
+        elif workspace_id is not None:
             search_kwargs["filter"] = {
                 "workspace_id": workspace_id,
-            }
+         }
+
+        elif document_id is not None:
+            search_kwargs["filter"] = {
+                "document_id": document_id,
+    }
 
         return self._vector_store.as_retriever(
             search_kwargs=search_kwargs,

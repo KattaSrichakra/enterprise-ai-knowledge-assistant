@@ -23,6 +23,10 @@ class ChatResponse(BaseModel):
         description="Generated answer.",
     )
 
+    session_id: int = Field(
+        description="Chat session ID used for continuing the conversation.",
+    )
+
 
 class UploadResponse(BaseModel):
     """

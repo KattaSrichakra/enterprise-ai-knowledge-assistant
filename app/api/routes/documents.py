@@ -15,7 +15,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.rag.loaders.file_loader import FILE_LOADER_MAPPING
+from app.rag.loaders.loader_factory import LoaderFactory
 from app.core.dependencies import (
     get_current_user,
     get_database,
@@ -161,18 +161,15 @@ async def upload_documents(
                              original_filename
                             ).suffix.lower()
 
-            if extension not in FILE_LOADER_MAPPING:
-                supported_types = ", ".join(
-                   FILE_LOADER_MAPPING.keys()
-                )
-
-                raise HTTPException(
-                   status_code=status.HTTP_400_BAD_REQUEST,
-                   detail=(
-                       f"Unsupported file type '{extension}'. "
-                       f"Supported types: {supported_types}"
-                    ),
-       )
+            if not LoaderFactory.is_supported_file(
+                  original_filename
+            ):
+                 raise HTTPException(
+                     status_code=status.HTTP_400_BAD_REQUEST,
+                     detail=(
+                         f"Unsupported file type '{extension}'."
+               ),
+            )
 
             # ==================================================
             # Create temporary file
@@ -309,20 +306,25 @@ async def upload_documents(
                 # RAG ingestion
                 # ==================================================
 
-                indexed_chunks = pipeline.ingest(
-                    sources=[
-                        str(temporary_path),
-                    ],
-                    metadata={
-                        "user_id": current_user.id,
-                        "workspace_id": workspace_id,
-                        "document_id": document.id,
-                        "document_version_id": version.id,
-                        "source_type": "file",
-                        "document_name": document.name,
-                    },
-                )
+                source_type = (
+                     "image"
+                     if Path(original_filename).suffix.lower()
+                     in LoaderFactory.IMAGE_EXTENSIONS
+                     else "file"
+      )
 
+                indexed_chunks = pipeline.ingest(
+                     sources=[
+                          str(temporary_path),
+              ],
+              metadata={
+                  "user_id": current_user.id,
+                  "workspace_id": workspace_id,
+                  "document_id": document.id,
+                  "document_version_id": version.id,
+                  "source_type": source_type,
+                  "document_name": document.name, },
+                  )
                 # ==================================================
                 # Mark version as indexed
                 # ==================================================

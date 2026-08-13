@@ -17,8 +17,11 @@ class RAGChain:
         Initialize the RAG chain.
 
         Args:
-            prompt: Prompt template used to generate prompts.
-            llm: Language model used to generate answers.
+            prompt:
+                Prompt template used to generate prompts.
+
+            llm:
+                Language model used to generate answers.
         """
 
         self._prompt = prompt
@@ -28,21 +31,16 @@ class RAGChain:
         self,
         question: str,
         context: str,
+        history: str = "",
     ) -> str:
         """
         Generate an answer using the provided
-        context and question.
-
-        Args:
-            question: User question.
-            context: Retrieved context.
-
-        Returns:
-            Generated answer as plain text.
+        conversation history, context, and question.
         """
 
         try:
             prompt_value = self._prompt.format_prompt(
+                history=history,
                 context=context,
                 question=question,
             )

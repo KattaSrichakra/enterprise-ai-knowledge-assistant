@@ -1,9 +1,6 @@
-import os
 from urllib.parse import urlparse
 
 from app.core.config import settings
-
-os.environ.setdefault("USER_AGENT", settings.USER_AGENT)
 
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_core.documents import Document
