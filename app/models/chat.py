@@ -10,6 +10,9 @@ class ChatSession(Base):
     """
     Database model representing a conversation session
     belonging to a user and workspace.
+
+    A chat session can optionally be associated with
+    a specific document.
     """
 
     __tablename__ = "chat_sessions"
@@ -34,6 +37,15 @@ class ChatSession(Base):
             ondelete="CASCADE",
         ),
         nullable=False,
+        index=True,
+    )
+
+    document_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "documents.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
         index=True,
     )
 
@@ -62,6 +74,10 @@ class ChatSession(Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="ChatMessage.created_at",
+    )
+
+    document: Mapped["Document | None"] = relationship(
+        "Document",
     )
 
 

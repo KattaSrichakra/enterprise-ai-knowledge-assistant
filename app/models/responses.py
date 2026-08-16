@@ -114,3 +114,54 @@ class WorkspaceResponse(BaseModel):
     updated_at: datetime = Field(
         description="Workspace last update timestamp.",
     )
+
+class ChatSessionResponse(BaseModel):
+    """
+    Response model for a chat session.
+    """
+
+    id: int = Field(
+        description="Unique chat session ID.",
+    )
+
+    workspace_id: int = Field(
+        description="Workspace containing the chat session.",
+    )
+
+    title: str = Field(
+        description="Chat session title.",
+    )
+
+    created_at: datetime = Field(
+        description="Chat session creation timestamp.",
+    )
+
+    updated_at: datetime = Field(
+        description="Chat session last update timestamp.",
+    )
+
+
+class ChatMessageResponse(BaseModel):
+    """
+    Response model for a chat message.
+    """
+
+    id: int = Field(
+        description="Unique chat message ID.",
+    )
+
+    session_id: int = Field(
+        description="Chat session containing the message.",
+    )
+
+    role: str = Field(
+        description="Message role: user or assistant.",
+    )
+
+    content: str = Field(
+        description="Message content.",
+    )
+
+    created_at: datetime = Field(
+        description="Message creation timestamp.",
+    )

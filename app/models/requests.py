@@ -21,6 +21,16 @@ class ChatRequest(BaseModel):
         "If omitted, a new session is created.",
     )
 
+    document_id: int | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Optional document ID. "
+            "When provided, the question is answered "
+            "using only this document."
+        ),
+    )
+
 class URLRequest(BaseModel):
     """
     Request model for indexing a web page.
